@@ -33,6 +33,10 @@ jobs:
             - name: Log in to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
 
+            - name: Build Docker image
+              run: |
+                  docker build -t $SERVICE_NAME:latest .
+
             - name: Tag Docker image with Git SHA
               run: |
                   ECR_URI=$(aws ecr describe-repositories --repository-names $SERVICE_NAME --region $AWS_REGION --query 'repositories[0].repositoryUri' --output text)
@@ -40,11 +44,10 @@ jobs:
                   echo "ECR_URI=$ECR_URI" >> $GITHUB_ENV
 
             - name: Push Docker image to ECR
+              id: push-ecr
               run: |
                   docker push $ECR_URI:${{ github.sha }}
-
-            - name: Output image URL for downstream jobs
-              run: echo "image=$ECR_URI:${{ github.sha }}" >> GITHUB_OUTPUT
+                  echo "image=$ECR_URI:${{ github.sha }}" >> $GITHUB_OUTPUT
 
             - name: Trigger Global Deployment
               uses: peter-evans/repository-dispatch@v3
