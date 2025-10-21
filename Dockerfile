@@ -23,7 +23,7 @@ RUN corepack enable && yarn install --production --frozen-lockfile
 COPY --from=builder /usr/src/app/dist ./dist
 
 # Copy necessary config and .env if needed
-COPY .env ./.env
+# COPY .env ./.env
 
 EXPOSE 3000
 CMD ["node", "dist/main"]
