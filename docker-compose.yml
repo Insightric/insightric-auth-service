@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  app:
+    build:
+      context: .
+      target: prod
+    ports:
+      - "3000:3000"
+    environment:
+      MONGO_URI: mongodb://root:example@mongo:27017/insightric
+      PORT: 3000
+    depends_on:
+      - mongo
+
+  e2e:
+    build:
+      context: .
+      target: dev
+    environment:
+      NODE_ENV: test
+      MONGO_URI: mongodb://root:example@mongo:27017/insightric-test
+      PORT: 3000
+    depends_on:
+      - mongo
+    # this container runs tests and exits
+    command: ["yarn", "test:e2e"]
+
+volumes:
+  mongo-data:
