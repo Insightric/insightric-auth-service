@@ -1,0 +1,62 @@
+name: Build and Push Docker Image
+
+permissions:
+    contents: read
+    id-token: write
+on:
+    push:
+        branches:
+            - main
+            - dev
+    pull_request:
+        branches:
+            - main
+            - dev
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        env:
+            AWS_REGION: us-east-1
+            SERVICE_NAME: insightric-auth-service
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Log in to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Build Docker image
+              run: |
+                  docker build -t $SERVICE_NAME:latest .
+
+            - name: Tag Docker image with Git SHA
+              run: |
+                  ECR_URI=$(aws ecr describe-repositories --repository-names $SERVICE_NAME --region $AWS_REGION --query 'repositories[0].repositoryUri' --output text)
+                  docker tag $SERVICE_NAME:latest $ECR_URI:${{ github.sha }}
+                  echo "ECR_URI=$ECR_URI" >> $GITHUB_ENV
+
+            - name: Push Docker image to ECR
+              id: push-ecr
+              run: |
+                  docker push $ECR_URI:${{ github.sha }}
+                  echo "image=$ECR_URI:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+            - name: Trigger Global Deployment
+              uses: peter-evans/repository-dispatch@v3
+              with:
+                  token: ${{ secrets.GH_PAT }}
+                  repository: Insightric/insightric
+                  event-type: deploy-service
+                  client-payload: |
+                      {
+                      "service": "${{ env.SERVICE_NAME }}",
+                      "image": "${{ steps.push-ecr.outputs.image }}"
+                      }
