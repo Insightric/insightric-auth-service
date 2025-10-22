@@ -45,6 +45,7 @@ jobs:
                   echo "ECR_URI=$ECR_URI" >> $GITHUB_ENV
 
             - name: Push Docker image to ECR
+              id: push-ecr
               run: |
                   docker push $ECR_URI:${{ github.sha }}
                   docker push $ECR_URI:latest
