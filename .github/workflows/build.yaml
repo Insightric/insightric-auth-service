@@ -37,16 +37,18 @@ jobs:
               run: |
                   docker build -t $SERVICE_NAME:latest .
 
-            - name: Tag Docker image with Git SHA
+            - name: Tag Docker image with Git SHA and latest
               run: |
                   ECR_URI=$(aws ecr describe-repositories --repository-names $SERVICE_NAME --region $AWS_REGION --query 'repositories[0].repositoryUri' --output text)
                   docker tag $SERVICE_NAME:latest $ECR_URI:${{ github.sha }}
+                  docker tag $SERVICE_NAME:latest $ECR_URI:latest
                   echo "ECR_URI=$ECR_URI" >> $GITHUB_ENV
 
             - name: Push Docker image to ECR
               id: push-ecr
               run: |
                   docker push $ECR_URI:${{ github.sha }}
+                  docker push $ECR_URI:latest
                   echo "image=$ECR_URI:${{ github.sha }}" >> $GITHUB_OUTPUT
 
             - name: Trigger Global Deployment
