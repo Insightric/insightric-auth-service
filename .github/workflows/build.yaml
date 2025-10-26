@@ -8,10 +8,11 @@ on:
     branches:
       - main
       - dev
-  pull_request:
-    branches:
-      - main
-      - dev
+      - "release/*"
+      - "hotfix/*"
+    tags:
+      - "v*.*.*"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -62,6 +63,6 @@ jobs:
             "service": "${{ env.SERVICE_NAME }}",
             "image": "${{ steps.push-ecr.outputs.image }}",
             "region": "${{ env.AWS_REGION }}",
-            "ref": "${{ github.ref }}",
+            "ref": "${{ github.ref_name }}",
             "display_name": "${{ env.SERVICE_NAME }} - ${{ github.ref_name }} - commit ${{ github.sha }} (run #${{ github.run_number }})"
             }
